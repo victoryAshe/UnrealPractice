@@ -1,6 +1,10 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+/[Cc]ontent/[Cc]haracters/
+/[Cc]ontent/[Ii]nfinity[Bb]lade[Gg]rass[Ll]ands/
+/[Cc]ontent/[Tt]hird[Pp]erson/
+
 # Compiled Object files
 *.slo
 *.lo
