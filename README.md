@@ -2,8 +2,9 @@
 『이득우의 언리얼 C++ 게임 개발의 정석』을 UE5로 실습했을 때 생긴 문제 해결 기록.  
 
 ## 목차  
-* [Chapter 5. 폰의 제작과 조작](#Chapter-5.-폰의-제작과-조작)  
-* [Chapter 6. 캐릭터의 제작과 컨트롤](#Chapter-6.-캐릭터의-제작과-컨트롤)  
+* [Chapter 5. 폰의 제작과 조작](#chapter-5.-폰의-제작과-조작)  
+* [Chapter 6. 캐릭터의 제작과 컨트롤](#chapter-6.-캐릭터의-제작과-컨트롤)  
+* [Chapter 7. 애니메이션 시스템의 설계](#chapter-7.-애니메이션-시스템의-설계)
 <hr/>  
   
 # Chapter 5. 폰의 제작과 조작  
@@ -109,7 +110,10 @@ void AABPawn::Tick(float DeltaTime)
 	Move(DeltaTime);
 }
 ```
-
+### 이후 챕터 실습 에 대한 변경 사항  
+Chapter 6 실습에서 DIABLO 방식과 GTA 방식에 대해 따로 코딩을 해주는데,  
+GTA 방식이 기존에 실습했던 방식이므로 `switch case`문에서 GTA의 부분만 위와 같이 진행하면 된다.  
+  
 ### 참고 자료  
 * [UE5 문서: AddMovementInput](https://docs.unrealengine.com/5.0/en-US/API/Runtime/Engine/GameFramework/APawn/AddMovementInput/)  
 * [AddMovementInput 함수의 이동속도 문제 해결하기](https://pppgod.tistory.com/39)  
@@ -145,4 +149,32 @@ void AABCharacter::Tick(float DeltaTime)
   
 <hr/>  
   
+# Chapter 7. 애니메이션 시스템의 설계  
+## Animation Retargeting 방법이 다름 (p.233 - p.238)  
+UE5는 이전 버전과 다른 Animation Retargeting 방식을 사용한다.  
   
+### 해결  
+참고 자료와 같은 방식을 사용하되, Source Skeletal Mesh는Characters\Mannequins\Meshes\SKM_Manny를 이용했다.  
+  
+### 참고 자료  
+* [[UE5] Animation Retargeting 방법](https://devjino.tistory.com/276)  
+  
+## JumpEnd Animation에서 캐릭터가 사라짐 (p.241)  
+Retarget할 Animation들은 Characters\Mannequins\Animations\Manny\에서 가져왔으며,  
+각각 JumpStart: MM_Jump, JumpLoop: MM_Fall_Loop, JumpEnd: MM_Land를 사용했다.  
+  
+Animation 창에서 봤을 때는 모두 잘 재생되었는데,  
+Anim Graph에서 연결 뒤 재생하면 JumpEnd에서 캐릭터가 작아지면서 사라졌다가 Idle에서는 다시 나타나는 문제가 발생했다.  
+  
+### 원인  
+MM_Land에서 Retargeting한 Animation에서 Additive Setting>AdditiveAnimType이 Local Space로 설정되어있어 나타난 문제였다.  
+ 
+###  해결  
+해당 Animation 창에서 Additive Setting>AdditiveAnimType을 No Additive로 설정하니 정상 작동하는 것을 확인했다.  
+  
+### 참고 자료  
+* [Epic Games Dev Community Forum](https://forums.unrealengine.com/t/player-character-disappears-when-jumping/478345)  
+  
+<hr/>  
+  
+
