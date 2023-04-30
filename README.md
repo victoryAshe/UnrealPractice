@@ -3,6 +3,7 @@
 
 ## 목차  
 * [Chapter 5. 폰의 제작과 조작](#Chapter-5.-폰의-제작과-조작)  
+* [Chapter 6. 캐릭터의 제작과 컨트롤](#Chapter-6.-캐릭터의-제작과-컨트롤)  
 <hr/>  
   
 # Chapter 5. 폰의 제작과 조작  
@@ -11,6 +12,8 @@
   
 _1. 보는 방향에 따라 이동 속도가 다름_  
 _2. 대각선으로 이동 시 속도가 빨라짐_  
+  
+실제 게임에서 이런 일이 발생하면 게임 플레이에 꽤나 영향을 미치므로 해결 방법을 찾아보았다.  
 
 ### 원인  
 우선 `AddMovementInput(Fvector Direction, float ScaleValue)`의 작동 원리를 살펴보자.  
@@ -63,18 +66,18 @@ Direction을 단위 벡터로 변경하기 위해, 다음과 같은 과정을 �
 //ABPawn.h
 UCLASS()
 class ARENABATTLE_API AABPawn : public APawn{
-...
+	...
 protected:
 	FVector DirectionG = FVector::Zero();
 	float VelocityG = 100.0f;
-...
+	...
 private:
 	void Move(float DeltaTime);
-...
+	...
 }
 
 //ABPawn.cpp
-...
+	...
 void AABPawn::UpDown(float NewAxisValue)
 {
 		FVector Direction = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::X);
@@ -112,4 +115,34 @@ void AABPawn::Tick(float DeltaTime)
 * [AddMovementInput 함수의 이동속도 문제 해결하기](https://pppgod.tistory.com/39)  
 
 <hr/>  
+  
+# Chapter 6. 캐릭터의 제작과 컨트롤  
+## SpringArm->RelativeRotation(p.203 - p. 204)  
+책과 똑같이 코딩하면 일부 코드가 에러를 발생시킨다.
+```C++
+// 에러 발생 부분
+void AABCharacter::Tick(float DeltaTime)
+{
+	...
+	SpringArm->RelativeRotation = FMath::RInterpTo(SpringArm->RelativeRotation, ArmRotationTo, DeltaTime, ArmRotationSpeed);
+	break;
+	...
+}
+```
+### 원인  
+SpringArm의 RelativeRotation이 private으로 바뀌었기 때문에 생긴 문제였다.  
+  
+### 해결  
+```C++
+void AABCharacter::Tick(float DeltaTime)
+{
+	...
+	SpringArm->SetRelativeRotation(FMath::RInterpTo(SpringArm->GetRelativeRotation(), ArmRotationTo, DeltaTime, ArmRotationSpeed));
+	break;
+	...
+}
+```
+  
+<hr/>  
+  
   
