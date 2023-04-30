@@ -34,6 +34,7 @@ protected:
 	float ArmLengthSpeed = 0.0f;
 	float ArmRotationSpeed = 0.0f;
 
+	//FVector Direction = FVector::Zero();
 	
 public:
 	// Called every frame
@@ -54,6 +55,7 @@ public:
 private:
 	void UpDown(float NewAxisValue);
 	void LeftRight(float NewAxisValue);
+	void Move(float DeltaTime);
 	void LookUp(float NewAxisValue);
 	void Turn(float NewAxisValue);
 

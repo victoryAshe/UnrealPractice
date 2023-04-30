@@ -84,7 +84,7 @@ void AABCharacter::SetControlMode(EControlMode NewControlMode)
 		GetCharacterMovement()->bUseControllerDesiredRotation = false;
 		// 회전 속도를 지정해 이동 방향으로 캐릭터가 부드럽게 회전하도록 함
 		GetCharacterMovement()->RotationRate = FRotator(0.0f, 720.0f, 0.0f);
-		break; 
+		break;
 	}
 
 	case EControlMode::DIABLO:
@@ -93,7 +93,7 @@ void AABCharacter::SetControlMode(EControlMode NewControlMode)
 		//SpringArm->SetRelativeRotation(FRotator(-45.0f, 0.0f, 0.0f));
 		ArmLengthTo = 800.0f;
 		ArmRotationTo = FRotator(-45.0f, 0.0f, 0.0f);
-		
+
 		SpringArm->bUsePawnControlRotation = false;
 		SpringArm->bInheritPitch = false;
 		SpringArm->bInheritRoll = false;
@@ -120,21 +120,23 @@ void AABCharacter::Tick(float DeltaTime)
 	switch (CurrentControlMode)
 	{
 	case EControlMode::DIABLO:
-	{
+	
 		SpringArm->SetRelativeRotation(FMath::RInterpTo(SpringArm->GetRelativeRotation(), ArmRotationTo, DeltaTime, ArmRotationSpeed));
 		break;
-	}
+	
 	}
 
 	switch (CurrentControlMode)
 	{
 	case EControlMode::DIABLO:
+	
 		if (DirectionToMove.SizeSquared() > 0.0f)
 		{
 			GetController()->SetControlRotation(FRotationMatrix::MakeFromX(DirectionToMove).Rotator());
 			AddMovementInput(DirectionToMove);
 		}
 		break;
+	
 	}
 
 
@@ -159,7 +161,7 @@ void AABCharacter::UpDown(float NewAxisValue)
 {
 	switch (CurrentControlMode)
 	{
-	case EControlMode::DIABLO:
+	case EControlMode::GTA:
 	{
 		FVector Direction = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::X);
 		Direction.Z = 0.0f;
@@ -167,8 +169,7 @@ void AABCharacter::UpDown(float NewAxisValue)
 		AddMovementInput(Direction, NewAxisValue);
 		break;
 	}
-
-	case EControlMode::GTA:
+	case EControlMode::DIABLO:
 	{
 		DirectionToMove.X = NewAxisValue;
 		break;
@@ -199,15 +200,20 @@ void AABCharacter::LeftRight(float NewAxisValue)
 	}
 }
 
+void AABCharacter::Move(float DeltaTime)
+{
+
+}
+
 void AABCharacter::LookUp(float NewAxisValue)
 {
 	switch (CurrentControlMode)
 	{
 	case EControlMode::GTA:
-	{
+	
 		AddControllerPitchInput(NewAxisValue);
 		break;
-	}
+	
 	}
 	
 }
@@ -217,10 +223,10 @@ void AABCharacter::Turn(float NewAxisValue)
 	switch (CurrentControlMode)
 	{
 	case EControlMode::GTA:
-	{
+	
 		AddControllerYawInput(NewAxisValue);
 		break;
-	}
+	
 
 	}
 }
@@ -229,24 +235,25 @@ void AABCharacter::ViewChange()
 {
 	switch (CurrentControlMode)
 	{
+
 	case EControlMode::GTA:
+	{
 		GetController()->SetControlRotation(GetActorRotation());
 		SetControlMode(EControlMode::DIABLO);
 		break;
-
+	}
 	case EControlMode::DIABLO:
+	{
 		GetController()->SetControlRotation(SpringArm->GetRelativeRotation());
 		SetControlMode(EControlMode::GTA);
 		break;
+	}
 	}
 }
 
 void AABCharacter::Attack()
 {
 	if (IsAttacking) return;
-
-	auto AnimInstance = Cast<UABAnimInstance>(GetMesh()->GetAnimInstance());
-	if (nullptr == AnimInstance) return;
 
 	ABAnim->PlayAttackMontage();
 	IsAttacking = true;
