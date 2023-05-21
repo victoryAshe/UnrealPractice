@@ -34,7 +34,8 @@ protected:
 	float ArmLengthSpeed = 0.0f;
 	float ArmRotationSpeed = 0.0f;
 
-	//FVector Direction = FVector::Zero();
+	FVector DirectionG = FVector::Zero();
+	float VelocityG = 100.0f;
 	
 public:
 	// Called every frame
@@ -65,9 +66,25 @@ private:
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	void AttackStartComboState();
+	void AttackEndComboState();
+	void AttackCheck();
+
 private:
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
 	bool IsAttacking;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+	bool CanNextCombo;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+	bool IsComboInputOn;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+	int32 CurrentCombo;
+
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = Attack, Meta = (AllowPrivateAccess = true))
+	int32 MaxCombo;
 
 	UPROPERTY()
 	class UABAnimInstance* ABAnim;

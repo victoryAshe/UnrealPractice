@@ -42,6 +42,10 @@ AABCharacter::AABCharacter()
 	GetCharacterMovement()->JumpZVelocity = 800.0f;
 
 	IsAttacking = false;
+	MaxCombo = 4;
+	AttackEndComboState();
+
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("ABCharacter"));
 }
 
 void AABCharacter::PostInitializeComponents()
@@ -52,6 +56,19 @@ void AABCharacter::PostInitializeComponents()
 	ABCHECK(nullptr != ABAnim);
 
 	ABAnim->OnMontageEnded.AddDynamic(this, &AABCharacter::OnAttackMontageEnded);
+
+	ABAnim->OnNextAttackCheck.AddLambda([this]()->void {
+		ABLOG(Warning, TEXT("OnNextAttackCheck"));
+		CanNextCombo = false;
+
+		if (IsComboInputOn)
+		{
+			AttackStartComboState();
+			ABAnim->JumpToAttackMontageSection(CurrentCombo);
+		}
+	});
+
+	ABAnim->OnAttackHitCheclk.AddUObject(this, &AABVharacter::AttackCheck);
 }
 
 // Called when the game starts or when spawned
@@ -129,14 +146,20 @@ void AABCharacter::Tick(float DeltaTime)
 	switch (CurrentControlMode)
 	{
 	case EControlMode::DIABLO:
-	
+	{
 		if (DirectionToMove.SizeSquared() > 0.0f)
 		{
 			GetController()->SetControlRotation(FRotationMatrix::MakeFromX(DirectionToMove).Rotator());
 			AddMovementInput(DirectionToMove);
 		}
 		break;
-	
+	}
+
+	case EControlMode::GTA:
+	{
+		Move(DeltaTime);
+		break;
+	}
 	}
 
 
@@ -166,7 +189,8 @@ void AABCharacter::UpDown(float NewAxisValue)
 		FVector Direction = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::X);
 		Direction.Z = 0.0f;
 		Direction.Normalize();
-		AddMovementInput(Direction, NewAxisValue);
+		DirectionG += Direction * FMath::Clamp(NewAxisValue, -1.0f, 1.0f);
+		//AddMovementInput(Direction, NewAxisValue);
 		break;
 	}
 	case EControlMode::DIABLO:
@@ -187,7 +211,8 @@ void AABCharacter::LeftRight(float NewAxisValue)
 		FVector Direction = FRotationMatrix(GetControlRotation()).GetUnitAxis(EAxis::Y);
 		Direction.Z = 0.0f;
 		Direction.Normalize();
-		AddMovementInput(Direction, NewAxisValue);
+		DirectionG += Direction * FMath::Clamp(NewAxisValue, -1.0f, 1.0f);
+		//AddMovementInput(Direction, NewAxisValue);
 		break;
 	}
 
@@ -202,7 +227,13 @@ void AABCharacter::LeftRight(float NewAxisValue)
 
 void AABCharacter::Move(float DeltaTime)
 {
+	if (DirectionG.IsZero()) {
+		return;
+	}
 
+	DirectionG.Normalize();
+	AddMovementInput(DirectionG, VelocityG * DeltaTime);
+	DirectionG.Set(0.0f, 0.0f, 0.0f);
 }
 
 void AABCharacter::LookUp(float NewAxisValue)
@@ -253,14 +284,48 @@ void AABCharacter::ViewChange()
 
 void AABCharacter::Attack()
 {
-	if (IsAttacking) return;
-
-	ABAnim->PlayAttackMontage();
-	IsAttacking = true;
+	if (IsAttacking)
+	{
+		ABCHECK(FMath::IsWithinInclusive<int32>(CurrentCombo, 1, MaxCombo));
+		if (CanNextCombo)
+		{
+			IsComboInputOn = true;
+		}
+	}
+	else
+	{
+		ABCHECK(CurrentCombo == 0);
+		AttackStartComboState();
+		ABAnim->PlayAttackMontage();
+		ABAnim->JumpToAttackMontageSection(CurrentCombo);
+		IsAttacking = true;
+	}
 }
 
 void AABCharacter::OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	ABCHECK(IsAttacking);
+	ABCHECK(CurrentCombo > 0);
 	IsAttacking = false;
+	AttackEndComboState();
+}
+
+void AABCharacter::AttackStartComboState()
+{
+	CanNextCombo = true;
+	IsComboInputOn = false;
+	ABCHECK(FMath::IsWithinInclusive<int32>(CurrentCombo, 0, MaxCombo - 1));
+	CurrentCombo = FMath::Clamp<int32>(CurrentCombo + 1, 1, MaxCombo);
+}
+
+void AABCharacter::AttackEndComboState()
+{
+	IsComboInputOn = false;
+	CanNextCombo = false;
+	CurrentCombo = 0;
+}
+
+void AABCharacter::AttackCheck()
+{
+
 }
