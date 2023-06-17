@@ -5,6 +5,9 @@
 * [Chapter 5. 폰의 제작과 조작](#chapter-5-폰의-제작과-조작)  
 * [Chapter 6. 캐릭터의 제작과 컨트롤](#chapter-6-캐릭터의-제작과-컨트롤)  
 * [Chapter 7. 애니메이션 시스템의 설계](#chapter-7-애니메이션-시스템의-설계)
+* [Chapter 8. 애니메이션 시스템 활용](#chapter-8-애니메이션-시스템-활용)
+* [Chapter 9. 충돌 설정과 데미지 전달](#chapter-9-충돌-설정과-데미지-전달)
+* [Chapter 10. 아이템 상자와 무기 제작](#chapter-10-아이템-상자와-무기-제작)
 <hr/>  
   
 # Chapter 5. 폰의 제작과 조작  
@@ -112,8 +115,9 @@ void AABPawn::Tick(float DeltaTime)
 ```
 ### 이후 챕터 실습 에 대한 변경 사항  
 Chapter 6 실습에서 DIABLO 방식과 GTA 방식에 대해 따로 코딩을 해주는데,  
-GTA 방식이 기존에 실습했던 방식이므로 `switch case`문에서 GTA의 부분만 위와 같이 진행하면 된다.  
-  
+GTA 방식이 기존에 실습했던 방식이므로 `switch case`문에서 GTA의 부분만 위와 같이 진행하면 된다. 
++ TODO: DIABLO 방식에서도 적용하기
+    
 ### 참고 자료  
 * [UE5 문서: AddMovementInput](https://docs.unrealengine.com/5.0/en-US/API/Runtime/Engine/GameFramework/APawn/AddMovementInput/)  
 * [AddMovementInput 함수의 이동속도 문제 해결하기](https://pppgod.tistory.com/39)  
@@ -177,4 +181,117 @@ MM_Land에서 Retargeting한 Animation에서 Additive Setting>AdditiveAnimType�
   
 <hr/>  
   
+# Chapter 8. 애니메이션 시스템 활용
+## Category = Attack이 Editor에서 표시가 안 되는 문제
 
+### 원인
+솔루션 빌드를 해도 Editor에 반영이 안 되어서였음;
+
+### 해결
+Editor에서 즉석 컴파일 및 로드 버튼을 클릭
+
+## 콤보 공격의 구현 문제
+Anim notify를 어떻게 배치해보아도 Combo가 1->2로 넘어가다가 말았다.  
+Editor상에서 확인해보니 Combo는 1->2까지 측정이 되는데 게임 플레이 상에서 Montage Section이 다음으로 넘어가지 않는 것 같았다.  
+콘솔 로그를 봐도 Error가 찍히지 않아 난감했다.  
+
+### 원인 1: BlendOut Trigger Time
+Anim Montage의 BlendOut Trigger Time은 해당 Section이 시작된 후 얼마나 지나야 Blend를 시작할지 결정한다.  
+이 기본값이 Section1의 길이를 넘어갔기 때문에 NextAttackCheck Notify가 제대로 체크될 수 없었다.  
+
+### 해결 1
+BlendOut Trigger Time을 0으로 설정한다.  
+그러면 NextAttackCheck를 Section의 너무 끝에 두지 않아도 잘 작동한다.  
+
+### 원인 2: 코딩 실수😨
+![Untitled](https://github.com/victoryAshe/UnrealPractice/assets/80302657/dd514246-335e-4f54-a32c-2d4495069650)
+`GetAttackMontageSectionName(int32 Section)`은 Section 이름을 만들어 넘겨주는 것이었는데,  
+그만 로그로 착각하는 바람에... `TEXT("Attack %d")`로 쓸데없는 띄어쓰기를 해서 Section 이름이 제대로 넘어가지 않았다.  
+
+### 해결 2
+잘못 쓴 부분을 제대로 고쳐주었더니 콤보가 말끔하게 작동되었다.
+
+### 참고 자료
+* [Anim Montage의 BlendOut Trigger Time 설정](https://blog.naver.com/PostView.naver?blogId=kzh8055&logNo=222044403660)
+
+<hr/>
+
+# Chapter 9. 충돌 설정과 데미지 전달
+## HitResult->GetActor (p. 298, 305)
+HitResult에서 Actor의 Valid 체크를 하는 부분에서 계속 에러가 났다.
+### 원인
+책의 버전에서와 달리 HitResult가 Actor를 private처리하는 바람에 생긴 문제였다.
+UE5에서는 `HitResult.Actor.IsValid()` 대신 `HitResult.GetActor()`로 Actor의 유효성을 검증한다.
+GetActor()가 실패하면 null이 반환되기 때문.
+### 해결
+```C++
+//p. 298
+if(HitResult.Actor.IsValid())
+{
+	ABLOG(Warning, TEXT("Hit Actor Name : %s"), *HitResult.Actor->GetName());
+}
+
+//->UE5
+if(HitResult.GetActor())
+{
+	ABLOG(Warning, TEXT("Hit Actor Name : %s"), *HitResult.GetActor()->GetName());
+}
+
+//p.305
+if(HitResult.Actor.IsValid())
+{
+	...
+			FDamageEvent DamageEvent;
+			HitResult.Actor->TakeDamage(50.0f, DamageEvent, GetController(), this);
+}
+
+//->UE5
+if (bResult)
+	{
+		if (HitResult.GetActor())
+		{
+...
+			FDamageEvent DamageEvent;
+			HitResult.GetActor()->TakeDamage(50.0f, DamageEvent, GetController(), this);
+		}
+	}
+```
+
+### 참고자료
+* [언리얼 문서](https://docs.unrealengine.com/5.2/en-US/API/Runtime/Engine/Engine/FHitResult/)
+
+<hr/>
+
+# Chapter 10. 아이템 상자와 무기 제작
+## Box의 Build Scale 변경 후 Static Mesh 깜빡임 문제(p. 326)
+![boxflickering](https://github.com/victoryAshe/UnrealPractice/assets/80302657/09618b55-db4e-4f16-8914-8c37cc955b63)
+
+### 원인  
+해당 box의 viewport에서 Show - visualize - OutOfBoundPixels 를 켜주면 바운드를 벗어난 mesh의 부분이 노란색으로 표시된다.  
+z값 bound는 buildscale로 인해 늘어난 mesh보다 낮은 곳에 위치해 있기 때문에 bound culling이 계속해서 일어나 깜빡거리는 것으로 보인다.  
+  
+Bounds Scale 은 액터의 바운드를 균등 스케일 조절하여, 원래 스케일 값의 배수 역할을 한다.  
+그 외에 비균등 스케일은 Positive Bounds Extension (양수 바운드 확장) 및 Negative Bounds Extensions (음수 바운드 확장)으로 조절하는데,  
+최종 바운드는 [Imported Bound - Negative Bound]에서 [Imported Bound + Positive Bound]까지이다.  
+
+### 해결 
+![화면 캡처 2023-06-18 065407](https://github.com/victoryAshe/UnrealPractice/assets/80302657/03ef51ad-f928-45ff-b6d4-bbc279fade8f)  
+  
+positive bound를 잘 확인하면서 z값을 조금씩 확장해준다.  
+bound를 너무 늘리면 culling 가능성을 낮춰 성능에 영향을 끼칠 수 있으므로, 문제를 일으키지 않는 선까지만 늘려주는 것이 좋다.  
+  
+### 참고 자료
+* [언리얼 포럼](https://forums.unrealengine.com/t/flickering-mesh/312889)  
+* [언리얼 문서 1](https://docs.unrealengine.com/4.27/ko/RenderingAndGraphics/VisibilityCulling/)  
+* [언리얼 문서 2](https://docs.unrealengine.com/4.26/en-US/API/Runtime/Engine/Engine/USkeletalMesh/PositiveBoundsExtension/)  
+* [Unreal Skeletal mesh bound culling](https://mentum.tistory.com/204)
+  
+## VisualStudio에서 _Delegate_.AddDynamic이 없다고 뜨거나 에러 표시되는 문제(p. 333)  
+### 원인  
+VisualSudio의 Intellisense가 AddDynamic을 찾지 못해서 생기는 문제이다.🙃  
+그냥 무시하고 진행하다보면 에러 표시가 사라져있을 것.  
+
+### 참고 자료  
+* [언리얼 델리게이트](https://velog.io/@myverytinybrain/%EC%96%B8%EB%A6%AC%EC%96%BC-%EB%8D%B8%EB%A6%AC%EA%B2%8C%EC%9D%B4%ED%8A%B8)
+
+<hr/>
