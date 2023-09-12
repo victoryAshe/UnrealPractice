@@ -10,6 +10,14 @@
 AABAIController::AABAIController()
 {
 	//RepeatInterval = 3.0f;
+
+	static ConstructorHelpers::FObjectFinder<UBlackboardData> BBObject(TEXT("/Game/Book/AI/BB_ABCharacter.BB_ABCharacter"));
+	if (BBObject.Succeeded())
+	{
+		BBAsset = BBObject.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTObject(TEXT("/Game/Book/AI/BT_ABCharacter.BT_ABCharacter"));
 }
 
 void AABAIController::OnPossess(APawn* InPawn)
