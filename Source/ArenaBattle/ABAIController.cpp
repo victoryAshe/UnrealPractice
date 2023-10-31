@@ -18,12 +18,28 @@ AABAIController::AABAIController()
 	}
 
 	static ConstructorHelpers::FObjectFinder<UBehaviorTree> BTObject(TEXT("/Game/Book/AI/BT_ABCharacter.BT_ABCharacter"));
+	if (BTObject.Succeeded())
+	{
+		BTAsset = BTObject.Object;
+	}
+
 }
 
 void AABAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
 	//GetWorld()->GetTimerManager().SetTimer(RepeatTimerHandle, this, &AABAIController::OnRepeatTimer, RepeatInterval, true);
+
+	UBlackboardComponent* BlackboardComp = Blackboard.Get();
+	if (UseBlackboard(BBAsset, BlackboardComp))
+	{
+		if (!RunBehaviorTree(BTAsset))
+		{
+			ABLOG(Error, TEXT("AIController couldn't run behaviour tree!"));
+		}
+	}
+	this->Blackboard = BlackboardComp;
+
 }
 
 /*
