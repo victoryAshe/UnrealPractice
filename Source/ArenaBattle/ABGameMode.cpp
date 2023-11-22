@@ -16,5 +16,5 @@ void AABGameMode::PostLogin(APlayerController* NewPlayer)
 {
 	ABLOG(Warning, TEXT("PostLogin Begin"));
 	Super::PostLogin(NewPlayer);
-	ABLOG(Warning, TEXT("PostKogin End"));
+	ABLOG(Warning, TEXT("PostLogin End"));
 }
