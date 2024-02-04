@@ -115,7 +115,7 @@ void AABPawn::Tick(float DeltaTime)
 ```
 ### 이후 챕터 실습 에 대한 변경 사항  
 Chapter 6 실습에서 DIABLO 방식과 GTA 방식에 대해 따로 코딩을 해주는데,  
-GTA 방식이 기존에 실습했던 방식이므로 `switch case`문에서 GTA의 부분만 위와 같이 진행하면 된다. 
+GTA 방식이 기존에 실습했던 방식이므로 `switch case`문에서 DIABLO의 부분만 위와 같이 진행하면 된다. 
 + TODO: DIABLO 방식에서도 적용하기
     
 ### 참고 자료  
