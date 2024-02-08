@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "ABCharacter.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnAttackEndDelegate);
+
 UCLASS()
 class ARENABATTLE_API AABCharacter : public ACharacter
 {
@@ -21,8 +23,9 @@ protected:
 
 	enum class EControlMode
 	{
-		GTA,
-		DIABLO
+		GTA,		// 카메라 회전에 대응하는 3인칭
+		DIABLO,		// 카메라 회전과 상관없는 3인칭: 로스트 아크 같은 거!!!
+		NPC			// NPC의 CharacterMovement를 Player보다 낮은 수준으로 조정
 	};
 
 	void SetControlMode(EControlMode NewControlMode);
@@ -35,13 +38,13 @@ protected:
 	float ArmRotationSpeed = 0.0f;
 
 	FVector DirectionG = FVector::Zero();
-	float VelocityG = 100.0f;
+	float VelocityG = 50.0f;
 	
 public:
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+	virtual void PossessedBy(AController* NewController) override;
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -64,6 +67,9 @@ public:
 	UPROPERTY(VisibleAnywhere, Category = UI)
 	class UWidgetComponent* HPBarWidget;
 
+	void Attack();
+	FOnAttackEndDelegate OnAttackEnd;
+
 
 private:
 	void UpDown(float NewAxisValue);
@@ -73,7 +79,6 @@ private:
 	void Turn(float NewAxisValue);
 
 	void ViewChange();
-	void Attack();
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted);
