@@ -9,6 +9,8 @@
 #include "Components/WidgetComponent.h"
 #include "ABCharacterWidget.h"
 #include "ABAIController.h"
+#include "ABCharacterSetting.h"
+#include "ABGameInstance.h"
 
 // Sets default values
 AABCharacter::AABCharacter()
@@ -59,7 +61,7 @@ AABCharacter::AABCharacter()
 	AttackRange = 200.0f;
 	AttackRadius = 50.0f;
 
-	HPBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 180.0f));
+	HPBarWidget->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
 	HPBarWidget->SetWidgetSpace(EWidgetSpace::Screen);
 	static ConstructorHelpers::FClassFinder<UUserWidget> UI_HUD(TEXT("/Game/Book/UI/UI_HPBar.UI_HPBar_C"));
 	if (UI_HUD.Succeeded())
@@ -95,7 +97,7 @@ void AABCharacter::PostInitializeComponents()
 	ABAnim->OnAttackHitCheck.AddUObject(this, &AABCharacter::AttackCheck);
 
 	CharacterStat->OnHPIsZero.AddLambda([this]()->void {
-		ABLOG(Warning, TEXT("OnHPIsZero"));
+		ABLOG(Warning, TEXT("OnHPIsZero"), NULL);
 		ABAnim->SetDeadAnim();
 		SetActorEnableCollision(false);
 		});
@@ -116,6 +118,20 @@ float AABCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 void AABCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!IsPlayerControlled())
+	{
+		auto DefaultSetting = GetDefault<UABCharacterSetting>();
+		int32 RandIndex = FMath::RandRange(0, DefaultSetting->CharacterAssets.Num() - 1);
+		CharacterAssetToLoad = DefaultSetting->CharacterAssets[RandIndex];
+
+		auto ABGameInstance = Cast<UABGameInstance>(GetGameInstance());
+		if (nullptr != ABGameInstance)
+		{
+			AssetStreamingHandle = ABGameInstance->StreamableManager.RequestAsyncLoad
+			(CharacterAssetToLoad, FStreamableDelegate::CreateUObject(this, &AABCharacter::OnAssetLoadCompleted));
+		}
+	}
 
 	auto CharacterWidget = Cast<UABCharacterWidget>(HPBarWidget->GetUserWidgetObject());
 	if (nullptr != CharacterWidget)
@@ -455,5 +471,15 @@ void AABCharacter::AttackCheck()
 			FDamageEvent DamageEvent;
 			HitResult.GetActor()->TakeDamage(CharacterStat->GetAttack(), DamageEvent, GetController(), this);
 		}
+	}
+}
+
+void AABCharacter::OnAssetLoadCompleted() 
+{
+	USkeletalMesh* AssetLoaded = Cast<USkeletalMesh>(AssetStreamingHandle->GetLoadedAsset());
+	AssetStreamingHandle.Reset();
+	if (nullptr != AssetLoaded)
+	{
+		GetMesh()->SetSkeletalMesh(AssetLoaded);
 	}
 }
