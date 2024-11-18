@@ -1,3 +1,6 @@
+# UnrealPractice: Note
+[스터디 기록](https://includesuyeon.notion.site/Unreal-4296675aecb442769536f8f6603b887e?pvs=4)
+
 # UnrealPractice: Troubleshooting  
 『이득우의 언리얼 C++ 게임 개발의 정석』을 UE5로 실습했을 때 생긴 문제 해결 기록.  
 
